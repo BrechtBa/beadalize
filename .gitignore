@@ -3,3 +3,4 @@ venv
 dist
 beadalize.egg-info
 __pycache__
+*.svg
