@@ -1,16 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as image
+from scipy import ndimage
 
 from beadalize.shared import SvgConvertable
 from beadalize.bead import Bead
 
 
 class Pattern(SvgConvertable):
-    def __init__(self, platform, palette=None, bead_type=Bead):
+    def __init__(self, platform, palette=None, bead_type=Bead,
+                 image_path=None, scale=1.0, xoffset=0.0, yoffset=0.0, rotation=0):
         self.platform = platform
         self.palette = palette
         self.beads = [bead_type(module=self.platform.module) for _ in range(len(self.platform.coordinates()))]
+
+        self.image_path = image_path
+        self.scale = scale
+        self.xoffset = xoffset
+        self.yoffset = yoffset
+        self.rotation = rotation
 
     def plot(self, ax=None):
         if ax is None:
@@ -24,9 +32,10 @@ class Pattern(SvgConvertable):
             patches.append(p)
         return patches
 
-    def colors_from_bitmap(self, path, scale=1.0, xoffset=0.0, yoffset=0.0):
-        img = image.imread(path)
-
+    @property
+    def image(self):
+        img = image.imread(self.image_path)
+        img = ndimage.rotate(img, self.rotation)
         if img.shape[2] == 4:
             # flatten alpha
             for i in range(img.shape[0]):
@@ -37,6 +46,11 @@ class Pattern(SvgConvertable):
                     img[i, j, 2] = 1 * (1 - a) + img[i, j, 2] * a
         img = img[:, :, :3]
 
+        return img
+
+    @property
+    def image_bounds(self):
+        img = self.image
         coordinates = self.platform.coordinates()
         x, y = zip(*coordinates)
         xmin = min(x) - 0.5*self.platform.module
@@ -48,10 +62,31 @@ class Pattern(SvgConvertable):
         img_dx = img.shape[1] * min(dx/img.shape[1], dy/img.shape[0])
         img_dy = img.shape[0] * min(dx/img.shape[1], dy/img.shape[0])
 
-        img_xmin = xmin + xoffset
-        img_xmax = xmin + xoffset + img_dx*scale
-        img_ymin = ymin + yoffset
-        img_ymax = ymin + yoffset + img_dy*scale
+        img_xmin = xmin + self.xoffset
+        img_xmax = xmin + self.xoffset + img_dx*self.scale
+        img_ymin = ymin + self.yoffset
+        img_ymax = ymin + self.yoffset + img_dy*self.scale
+        return img_xmin, img_xmax, img_ymin, img_ymax
+
+    def plot_image(self, ax=None):
+        img_xmin, img_xmax, img_ymin, img_ymax = self.image_bounds
+
+        if ax is None:
+            ax = plt.gca()
+
+        self.plot(ax=ax)
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        pl = ax.imshow(self.image, extent=[img_xmin, img_xmax, img_ymin, img_ymax])
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        return pl
+
+    def get_colors(self):
+        img = self.image
+        img_xmin, img_xmax, img_ymin, img_ymax = self.image_bounds
+
+        coordinates = self.platform.coordinates()
 
         pixel_y = np.interp(range(img.shape[0]), [-0.5, img.shape[0] - 0.5], [img_ymax, img_ymin])
         pixel_x = np.interp(range(img.shape[1]), [-0.5, img.shape[1] - 0.5], [img_xmin, img_xmax])
@@ -74,12 +109,3 @@ class Pattern(SvgConvertable):
                     b.color = self.palette.nearest(tuple(np.round(original_color, 4)))
                 else:
                     b.color = original_color
-
-        # plotting for testing
-        # fig, ax = plt.subplots()
-        # self.plot(ax=ax)
-        # xlim = ax.get_xlim()
-        # ylim = ax.get_ylim()
-        # pl = ax.imshow(img, extent=[img_xmin, img_xmax, img_ymin, img_ymax])
-        # ax.set_xlim(xlim)
-        # ax.set_ylim(ylim)

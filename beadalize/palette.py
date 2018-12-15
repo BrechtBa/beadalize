@@ -8,6 +8,9 @@ class Palette:
     def __init__(self, colors):
         self.colors = colors
 
+    def subset(self, index):
+        return Palette([self.colors[i] for i in index])
+
     @staticmethod
     def distance(color1: tuple, color2: tuple):
         from colormath.color_objects import sRGBColor, LabColor
@@ -31,7 +34,7 @@ class Palette:
     def plot(self, ax=None):
         if ax is None:
             ax = plt.gca()
-        ax.imshow(np.expand_dims(np.array(self.colors), 0), extent=[0, 1, 0, 1])
+        ax.imshow(np.expand_dims(np.array(self.colors), 0), extent=[0, len(self.colors), 0, 1])
 
 
 hama_color_palette = Palette([
