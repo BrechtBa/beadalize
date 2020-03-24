@@ -46,6 +46,12 @@ class HexagonPlatform(Platform):
         return list(zip(x, y))
 
 
+class HexagonPlatformTilted(HexagonPlatform):
+    def coordinates(self):
+        coordinates = super().coordinates()
+        return [[c[1], c[0]] for c in coordinates]
+
+
 class SquarePlatform(Platform):
     def __init__(self, *args, size=16, **kwargs):
         super().__init__(*args, **kwargs)
@@ -75,3 +81,12 @@ class RectangularPlatform(Platform):
                 y.append(i*self.module)
                 x.append(j*self.module)
         return list(zip(x, y))
+
+
+def get_platform(class_name, *args, **kwargs):
+    classes = {
+        'HexagonPlatform': HexagonPlatform,
+        'HexagonPlatformTilted': HexagonPlatformTilted,
+        'RectangularPlatform': RectangularPlatform
+    }
+    return classes.get(class_name)(*args, **kwargs)

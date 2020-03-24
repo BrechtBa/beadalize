@@ -1,9 +1,10 @@
 import argparse
+import json
 
 import matplotlib.pyplot as plt
 
 from beadalize.palette import hama_color_palette
-from beadalize.platform import HexagonPlatform
+from beadalize.platform import get_platform
 from beadalize.pattern import Pattern
 
 
@@ -22,6 +23,8 @@ parser.add_argument('--rotation', type=float, default=0.0,
                     help='rotation')
 parser.add_argument('--platform', type=str, default='HexagonPlatform',
                     help='platform')
+parser.add_argument('--platform-kwargs', type=json.loads, default={},
+                    help='platform keyword arguments')
 parser.add_argument('--palette', type=str, default='hama_color_palette',
                     help='palette')
 parser.add_argument('--no-pattern', dest='no_pattern', action='store_const',
@@ -30,7 +33,7 @@ parser.add_argument('--no-pattern', dest='no_pattern', action='store_const',
 args = parser.parse_args()
 
 palette = hama_color_palette
-platform = HexagonPlatform(module=5, size=16)
+platform = get_platform(args.platform, **args.platform_kwargs)
 pattern = Pattern(platform, palette=palette, image_path=args.input,
                   scale=args.scale, xoffset=args.xoffset, yoffset=args.yoffset, rotation=args.rotation)
 
